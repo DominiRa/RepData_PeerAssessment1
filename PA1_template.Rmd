@@ -1,25 +1,126 @@
----
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
----
+-------------------------------------------------------------
+
+#Activity monitoring
+##author: Dominika Ra
+
+date: 11 kwietnia 2022
+
+output: html_document
 
 
-## Loading and preprocessing the data
+-------------------------------------------------------------
+
+R version:
+4.1.1 (2021-08-10) -- "Kick Things"
+Copyright (C) 2021 The R Foundation for Statistical Computing
+Platform: x86_64-w64-mingw32/x64 (64-bit)
+
+-------------------------------------------------------------
+##1. Code for reading in the dataset and/or processing the data
+
+
+```{r setup, include= FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
 
 
 
-## What is mean total number of steps taken per day?
+```{r 1}
+data<-read.csv("activity.csv")
+names(data)
+head(data)
+str(data)
+summary(data)
+```
+##I create a datebase without NA's
+```{r 0}
+data1<-data[which(data$step>=0), ]
+dim(data1)
+```
+
+##2. Histogram of the total number of steps taken each day
+
+
+```{r 2}
+plot(tapply(data1$steps,data1$date,sum),type ="l",xlab="Day of the analysis",ylab = "Sum of steps in a day", main = "The total number of steps taken each day")
+```
+
+
+##3. Mean and median number of steps taken each day
+
+```{r 3}
+library(dplyr)
+by_date<-group_by(data1,date)
+summarize(by_date,mean(steps),median(steps))
+```
 
 
 
-## What is the average daily activity pattern?
+
+##4. Time series plot of the average number of steps taken
+
+```{r 4}
+plot(tapply(data1$steps,data1$date,mean),type ="l",xlab="Day of the analysis",ylab = "Mean of steps in a day", main = "The mean value of steps taken each day")
+```
 
 
 
-## Imputing missing values
+##5. The 5-minute interval that, on average, contains the maximum number of steps
+
+```{r 5}
+plot(tapply(data1$steps,data1$interval,mean),type ="l",xlab="Interval number",ylab = "Mean of steps in interval", main = "The mean number of steps taken in interval")
+plot(tapply(data1$steps,data1$interval,max),type ="l",xlab="Interval number",ylab = "Maximum value for steps in interval", main = "The max number of steps taken in interval")
+```
 
 
 
-## Are there differences in activity patterns between weekdays and weekends?
+##6. Code to describe and show a strategy for imputing missing data
+
+```{r bledy}
+sum(is.na(data$steps))
+```
+
+```{r total}
+sum(is.na(data$steps))/nrow(data)*100
+```
+
+###The total number of rows with NA = ` r bledy`. NA's account for ` r total` % of all rows.
+
+###The NA's were fill in with mean for a interval
+```{r na}
+data1<-data[which(data$step>=0), ]
+by_interval<-group_by(data1,interval)
+inter_df<-data.frame(summarize(by_interval,mean(steps)))
+head(inter_df)
+data_na<-data[is.na(data$steps), ]
+data_na_ok<-merge(data_na,inter_df,by.x = "interval",by.y = "interval")
+data_na_ok1<-select(data_na_ok, mean.steps.,date,interval)
+data_na_ok2<-rename(data_na_ok1,steps = mean.steps.)
+data_total<-rbind(data1,data_na_ok2)
+dim(data_total)
+head(data_total)
+```
+##7. Histogram of the total number of steps taken each day after missing values are imputed
+```{r 7}
+plot(tapply(data_total$steps,data_total$date,sum),type ="l",xlab="Day of analysis",ylab = "Sum of steps in a day", main = "The total number of steps taken each day")
+```
+
+
+
+##8. Panel plot comparing the average number of steps taken per 5-minute interval across weekdays and weekends
+```{r 8}
+data_total_w<-mutate(data_total,date=as.Date(date))
+data_total_w1<-mutate(data_total_w,weekdays(date))
+slownik<-data.frame(weekdays=c("poniedziałek","wtorek","środa","czwartek","piątek","sobota","niedziela"),rodzaj = c("week","week","week","week","week","weekend","weekend"))
+slownik
+data_total_w2<-merge(data_total_w1,slownik,by.x="weekdays(date)",by.y="weekdays")
+data_total_w3<-select(data_total_w2,steps,interval,rodzaj)
+by_interval_total<-group_by(data_total_w3,rodzaj,interval)
+a<-summarize(by_interval_total,mean(steps))
+a<-rename(a,msteps = "mean(steps)")
+library(ggplot2)
+qplot(interval,msteps,data=a,facets=rodzaj~. ,main = "Average number of steps taken per 5-minute interval across weekdays and weekends") 
+```
+
+
+
