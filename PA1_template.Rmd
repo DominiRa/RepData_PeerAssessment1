@@ -119,7 +119,7 @@ by_interval_total<-group_by(data_total_w3,rodzaj,interval)
 a<-summarize(by_interval_total,mean(steps))
 a<-rename(a,msteps = "mean(steps)")
 library(ggplot2)
-qplot(interval,msteps,data=a,facets=rodzaj~. ,main = "Average number of steps taken per 5-minute interval across weekdays and weekends") 
+qplot(interval,msteps,data=a,facets=rodzaj~.,geom = c("line") ,main = "Average number of steps taken per 5-minute interval across weekdays and weekends") 
 ```
 
 
